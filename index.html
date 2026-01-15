@@ -38,12 +38,17 @@
   document.getElementById('amountBtn').textContent = amount;
   document.getElementById('ref').textContent = decodeURIComponent(ref);
   
-  // Map amounts to SKUs - ADD MORE AS NEEDED
+  // Map amounts to SKUs
   function getSKU(amt) {
     if (amt == '495') return 'SYS495';
     if (amt == '1000') return 'SRV1000';
-    return 'CUST'; // fallback
+    return 'CUST';
   }
+  
+  // Split name into first and last
+  const nameParts = decodeURIComponent(name).split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
   
   document.getElementById('payBtn').addEventListener('click', function() {
     CollectCheckout.redirectToCheckout({
@@ -53,8 +58,13 @@
         sku: getSKU(amount),
         quantity: 1
       }],
+      customerInfo: {
+        email: email,
+        firstName: firstName,
+        lastName: lastName
+      },
       receipt: { showReceipt: true, sendToCustomer: true },
-      collectShippingInfo: false,
+      collectShippingInfo: true,
       paymentMethods: [{ type: "creditCard" }]
     }).catch(function(error) {
       console.error('Error:', error);
@@ -62,5 +72,3 @@
     });
   });
 </script>
-</body>
-</html>
