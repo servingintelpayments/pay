@@ -52,18 +52,13 @@
   
   document.getElementById('payBtn').addEventListener('click', function() {
     CollectCheckout.redirectToCheckout({
-      type: "sale",
-      lineItems: [{
-        lineItemType: "purchase",
-        sku: getSKU(amount),
-        quantity: 1
-      }],
-      customerInfo: {
-        email: email,
-        firstName: firstName,
-        lastName: lastName
-      },
-      receipt: { showReceipt: true, sendToCustomer: true },
+  type: "sale",
+  lineItems: [{
+    lineItemType: "purchase",
+    sku: getSKU(amount),
+    quantity: 1
+  }],
+  receipt: { showReceipt: true, sendToCustomer: true },
       collectShippingInfo: true,
       paymentMethods: [{ type: "creditCard" }]
     }).catch(function(error) {
