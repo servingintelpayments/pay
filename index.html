@@ -1,69 +1,323 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Payment</title>
-  <script src="https://secure.bngpaymentgateway.com/token/CollectCheckout.js" data-checkout-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Payment - ServingIntel</title>
+  
+  <!-- Collect.js for secure card tokenization -->
+  <script src="https://secure.networkmerchants.com/token/Collect.js" 
+          data-tokenization-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"
+          data-variant="inline"></script>
+  
   <style>
-    body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
-    .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h1 { color: #0066cc; text-align: center; }
-    .details { background: #f9f9f9; padding: 20px; border-left: 4px solid #0066cc; margin: 20px 0; }
-    .details p { margin: 10px 0; }
-    button { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
-    button:hover { background: #218838; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 500px; 
+      margin: 40px auto; 
+      padding: 20px; 
+      background: #f0f2f5; 
+    }
+    .container { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    }
+    h1 { 
+      color: #0066cc; 
+      text-align: center; 
+      margin-bottom: 5px;
+      font-size: 24px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
+    .details { 
+      background: #f8f9fa; 
+      padding: 15px; 
+      border-radius: 8px;
+      border-left: 4px solid #0066cc; 
+      margin-bottom: 25px; 
+    }
+    .details p { margin: 8px 0; font-size: 14px; }
+    .details .amount { 
+      font-size: 28px; 
+      font-weight: bold; 
+      color: #28a745; 
+      margin: 10px 0;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { 
+      display: block; 
+      margin-bottom: 8px; 
+      font-weight: bold;
+      color: #333;
+      font-size: 14px;
+    }
+    .collect-field {
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      background: #fff;
+      min-height: 45px;
+    }
+    .collect-field:focus-within {
+      border-color: #0066cc;
+    }
+    .row { display: flex; gap: 15px; }
+    .row .form-group { flex: 1; }
+    #payBtn { 
+      background: #28a745; 
+      color: white; 
+      padding: 16px; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 18px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      width: 100%;
+      margin-top: 10px;
+    }
+    #payBtn:hover { background: #218838; }
+    #payBtn:disabled { 
+      background: #ccc; 
+      cursor: not-allowed; 
+    }
+    .error { 
+      background: #f8d7da; 
+      color: #721c24; 
+      padding: 15px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+      display: none;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+    .success h2 { margin-top: 0; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0066cc;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .secure-badge {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+    .secure-badge span { color: #28a745; }
   </style>
 </head>
 <body>
+
 <div class="container">
-  <h1>💳 Complete Your Payment</h1>
-  <div class="details">
-    <h3>📄 Payment Details</h3>
-    <p><strong>Customer:</strong> <span id="name"></span></p>
-    <p><strong>Email:</strong> <span id="email"></span></p>
-    <p><strong>Amount Due:</strong> $<span id="amount"></span></p>
-    <p><strong>Agreement:</strong> <span id="ref"></span></p>
+  <!-- Loading State -->
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Loading payment details...</p>
   </div>
-  <button id="payBtn">Pay Now - $<span id="amountBtn"></span></button>
+
+  <!-- Error State -->
+  <div id="errorState" class="error">
+    <strong>Error:</strong> <span id="errorMessage">Invalid or expired payment link.</span>
+  </div>
+
+  <!-- Success State -->
+  <div id="successState" class="success">
+    <h2>✅ Payment Successful!</h2>
+    <p>Thank you for your payment. A receipt has been sent to your email.</p>
+    <p>Transaction ID: <strong id="transactionId"></strong></p>
+  </div>
+
+  <!-- Payment Form -->
+  <div id="paymentForm" style="display:none;">
+    <h1>💳 Complete Your Payment</h1>
+    <p class="subtitle">ServingIntel Secure Checkout</p>
+    
+    <div class="details">
+      <p><strong>Customer:</strong> <span id="customerName"></span></p>
+      <p><strong>Email:</strong> <span id="customerEmail"></span></p>
+      <p><strong>Agreement:</strong> <span id="reference"></span></p>
+      <p class="amount">$<span id="amount"></span></p>
+    </div>
+
+    <form id="payment-form">
+      <div class="form-group">
+        <label>Card Number</label>
+        <div id="ccnumber" class="collect-field"></div>
+      </div>
+      
+      <div class="row">
+        <div class="form-group">
+          <label>Expiration</label>
+          <div id="ccexp" class="collect-field"></div>
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <div id="cvv" class="collect-field"></div>
+        </div>
+      </div>
+
+      <button type="submit" id="payBtn">
+        Pay $<span id="amountBtn"></span>
+      </button>
+    </form>
+
+    <div class="secure-badge">
+      <span>🔒</span> Secured by NMI Payment Gateway
+    </div>
+  </div>
 </div>
+
 <script>
+  // Configuration
+  const BACKEND_URL = 'https://0cbdd4b906deeaffb33fb6cd7fc4c6.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/267738c0f32a4462be04b81438d294b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=butn7mXmXwyJV0a_jfUaQ_RFCSl0puYe6boQmBCn-wI';
+
+  // Get URL parameters
   const params = new URLSearchParams(window.location.search);
-  const amount = params.get('amount') || '0';
-  const name = params.get('name') || 'Customer';
-  const email = params.get('email') || '';
-  const ref = params.get('ref') || 'Payment';
-  
-  document.getElementById('name').textContent = decodeURIComponent(name);
-  document.getElementById('email').textContent = email;
-  document.getElementById('amount').textContent = amount;
-  document.getElementById('amountBtn').textContent = amount;
-  document.getElementById('ref').textContent = decodeURIComponent(ref);
-  
-  // Map amounts to SKUs
-  function getSKU(amt) {
-    if (amt == '495') return 'SYS495';
-    if (amt == '1000') return 'SRV1000';
-    return 'CUST';
+  const amount = params.get('amount');
+  const name = params.get('name');
+  const email = params.get('email');
+  const ref = params.get('ref');
+
+  // DOM elements
+  const loadingState = document.getElementById('loadingState');
+  const errorState = document.getElementById('errorState');
+  const successState = document.getElementById('successState');
+  const paymentForm = document.getElementById('paymentForm');
+  const payBtn = document.getElementById('payBtn');
+
+  // Validate parameters
+  if (!amount || !name || !email || !ref) {
+    loadingState.style.display = 'none';
+    errorState.style.display = 'block';
+  } else {
+    // Show payment form
+    loadingState.style.display = 'none';
+    paymentForm.style.display = 'block';
+    
+    // Populate details
+    document.getElementById('customerName').textContent = decodeURIComponent(name);
+    document.getElementById('customerEmail').textContent = decodeURIComponent(email);
+    document.getElementById('amount').textContent = amount;
+    document.getElementById('amountBtn').textContent = amount;
+    document.getElementById('reference').textContent = decodeURIComponent(ref);
   }
-  
-  // Split name into first and last
-  const nameParts = decodeURIComponent(name).split(' ');
+
+  // Split name for API
+  const nameParts = decodeURIComponent(name || '').split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
-  
-  document.getElementById('payBtn').addEventListener('click', function() {
-    CollectCheckout.redirectToCheckout({
-  type: "sale",
-  lineItems: [{
-    lineItemType: "purchase",
-    sku: getSKU(amount),
-    quantity: 1
-  }],
-  receipt: { showReceipt: true, sendToCustomer: true },
-      collectShippingInfo: true,
-      paymentMethods: [{ type: "creditCard" }]
-    }).catch(function(error) {
-      console.error('Error:', error);
-      alert('Unable to process payment. Please contact support.');
-    });
+
+  // Configure Collect.js
+  CollectJS.configure({
+    variant: 'inline',
+    fields: {
+      ccnumber: {
+        selector: '#ccnumber',
+        placeholder: '•••• •••• •••• ••••'
+      },
+      ccexp: {
+        selector: '#ccexp',
+        placeholder: 'MM / YY'
+      },
+      cvv: {
+        selector: '#cvv',
+        placeholder: '•••'
+      }
+    },
+    callback: function(response) {
+      // Got the token, now process payment
+      processPayment(response.token);
+    }
   });
+
+  // Form submission
+  document.getElementById('payment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    payBtn.disabled = true;
+    payBtn.textContent = 'Processing...';
+    CollectJS.startPaymentRequest();
+  });
+
+  // Process payment via backend
+  async function processPayment(token) {
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token: token,
+          amount: amount,
+          firstName: firstName,
+          lastName: lastName,
+          email: decodeURIComponent(email),
+          orderid: decodeURIComponent(ref)
+        })
+      });
+
+      const result = await response.text();
+      
+      // Parse NMI response
+      const params = new URLSearchParams(result);
+      const responseCode = params.get('response');
+      const responseText = params.get('responsetext');
+      const transactionId = params.get('transactionid');
+
+      if (responseCode === '1') {
+        // Success
+        paymentForm.style.display = 'none';
+        successState.style.display = 'block';
+        document.getElementById('transactionId').textContent = transactionId;
+      } else {
+        // Failed
+        throw new Error(responseText || 'Payment failed');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      errorState.style.display = 'block';
+      document.getElementById('errorMessage').textContent = error.message;
+      payBtn.disabled = false;
+      payBtn.innerHTML = 'Pay $' + amount;
+    }
+  }
 </script>
+
+</body>
+</html>
+```
+
+5. Scroll down and click **"Commit changes"**
+6. Wait 2 minutes for deployment
+
+---
+
+## 🧪 STEP 6: Test the Payment Page
+
+Open this URL in your browser:
+```
+https://servingintelpayments.github.io/pay/?amount=162.01&name=Jeffrey%20Datul&email=jdatul@servingintel.com&ref=Test%20Agreement
