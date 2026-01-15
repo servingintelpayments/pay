@@ -1,140 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure Payment - ServingIntel</title>
-  
-  <script src="https://secure.bngpaymentgateway.com/token/CollectCheckout.js" 
-          data-checkout-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"></script>
-  
+  <title>Payment</title>
+  <script src="https://secure.bngpaymentgateway.com/token/CollectCheckout.js" data-checkout-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      background-color: #f5f5f5;
-    }
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #0066cc;
-      text-align: center;
-    }
-    .payment-details {
-      background: #f9f9f9;
-      padding: 20px;
-      border-left: 4px solid #0066cc;
-      margin: 20px 0;
-    }
-    .payment-details p {
-      margin: 10px 0;
-    }
-    #payBtn {
-      background-color: #28a745;
-      color: white;
-      padding: 15px 40px;
-      border: none;
-      border-radius: 5px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 20px;
-    }
-    #payBtn:hover {
-      background-color: #218838;
-    }
-    .loading {
-      text-align: center;
-      color: #666;
-    }
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
-    }
+    body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+    .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #0066cc; text-align: center; }
+    .details { background: #f9f9f9; padding: 20px; border-left: 4px solid #0066cc; margin: 20px 0; }
+    .details p { margin: 10px 0; }
+    button { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
+    button:hover { background: #218838; }
   </style>
 </head>
 <body>
-
 <div class="container">
   <h1>💳 Complete Your Payment</h1>
-  
-  <div id="loading" class="loading">
-    <p>Loading payment details...</p>
+  <div class="details">
+    <h3>📄 Payment Details</h3>
+    <p><strong>Customer:</strong> <span id="name"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>Amount Due:</strong> $<span id="amount"></span></p>
+    <p><strong>Agreement:</strong> <span id="ref"></span></p>
   </div>
-  
-  <div id="error" class="error" style="display:none;">
-    <strong>Error:</strong> Invalid or expired payment link.
-  </div>
-  
-  <div id="paymentInfo" style="display:none;">
-    <div class="payment-details">
-      <h3>📄 Payment Details</h3>
-      <p><strong>Customer:</strong> <span id="customerName"></span></p>
-      <p><strong>Email:</strong> <span id="customerEmail"></span></p>
-      <p><strong>Amount Due:</strong> $<span id="amount"></span></p>
-      <p><strong>Agreement:</strong> <span id="reference"></span></p>
-    </div>
-    
-    <button id="payBtn">Pay Now - $<span id="amountBtn"></span></button>
-  </div>
+  <button id="payBtn">Pay Now - $<span id="amountBtn"></span></button>
 </div>
-
 <script>
   const params = new URLSearchParams(window.location.search);
-  const amount = params.get('amount');
-  const name = params.get('name');
-  const email = params.get('email');
-  const reference = params.get('ref');
+  const amount = params.get('amount') || '0';
+  const name = params.get('name') || 'Customer';
+  const email = params.get('email') || '';
+  const ref = params.get('ref') || 'Payment';
   
-  if (!amount || !name || !email || !reference) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').style.display = 'block';
-  } else {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('paymentInfo').style.display = 'block';
-    document.getElementById('customerName').textContent = decodeURIComponent(name);
-    document.getElementById('customerEmail').textContent = email;
-    document.getElementById('amount').textContent = amount;
-    document.getElementById('amountBtn').textContent = amount;
-    document.getElementById('reference').textContent = decodeURIComponent(reference);
-    
-    document.getElementById('payBtn').addEventListener('click', function() {
-      CollectCheckout.redirectToCheckout({
-        type: "sale",
-        lineItems: [{
-          lineItemType: "customPayment",
-          description: decodeURIComponent(reference),
-          currency: "USD"
-        }],
-        successUrl: null,
-        cancelUrl: null,
-        receipt: {
-          showReceipt: true,
-          sendToCustomer: true
-        },
-        collectShippingInfo: false,
-        paymentMethods: [
-          { type: "creditCard", use3DSecure: false },
-          { type: "check" },
-          { type: "googlePay", use3DSecure: false }
-        ]
-      }).catch(function(error) {
-        console.error('Payment error:', error);
-        alert('Unable to process payment. Please contact support.');
-      });
-    });
+  document.getElementById('name').textContent = decodeURIComponent(name);
+  document.getElementById('email').textContent = email;
+  document.getElementById('amount').textContent = amount;
+  document.getElementById('amountBtn').textContent = amount;
+  document.getElementById('ref').textContent = decodeURIComponent(ref);
+  
+  // Map amounts to SKUs - ADD MORE AS NEEDED
+  function getSKU(amt) {
+    if (amt == '495') return 'SYS495';
+    if (amt == '1000') return 'SRV1000';
+    return 'CUST'; // fallback
   }
+  
+  document.getElementById('payBtn').addEventListener('click', function() {
+    CollectCheckout.redirectToCheckout({
+      type: "sale",
+      lineItems: [{
+        lineItemType: "purchase",
+        sku: getSKU(amount),
+        quantity: 1
+      }],
+      receipt: { showReceipt: true, sendToCustomer: true },
+      collectShippingInfo: false,
+      paymentMethods: [{ type: "creditCard" }]
+    }).catch(function(error) {
+      console.error('Error:', error);
+      alert('Unable to process payment. Please contact support.');
+    });
+  });
 </script>
-
 </body>
 </html>
