@@ -3,12 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure Payment - ServingIntel</title>
-  
-  <!-- Collect.js for secure card tokenization -->
-  <script src="https://secure.networkmerchants.com/token/Collect.js" 
-          data-tokenization-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"
-          data-variant="inline"></script>
+  <title>Request Invoice - ServingIntel</title>
   
   <style>
     * { box-sizing: border-box; }
@@ -47,63 +42,9 @@
     .details .amount { 
       font-size: 28px; 
       font-weight: bold; 
-      color: #28a745; 
+      color: #0066cc; 
       margin: 10px 0;
     }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { 
-      display: block; 
-      margin-bottom: 8px; 
-      font-weight: bold;
-      color: #333;
-      font-size: 14px;
-    }
-    .collect-field {
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      padding: 12px;
-      background: #fff;
-      min-height: 45px;
-    }
-    .collect-field:focus-within {
-      border-color: #0066cc;
-    }
-    .row { display: flex; gap: 15px; }
-    .row .form-group { flex: 1; }
-    #payBtn { 
-      background: #28a745; 
-      color: white; 
-      padding: 16px; 
-      border: none; 
-      border-radius: 8px; 
-      font-size: 18px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      width: 100%;
-      margin-top: 10px;
-    }
-    #payBtn:hover { background: #218838; }
-    #payBtn:disabled { 
-      background: #ccc; 
-      cursor: not-allowed; 
-    }
-    .error { 
-      background: #f8d7da; 
-      color: #721c24; 
-      padding: 15px; 
-      border-radius: 8px; 
-      margin-bottom: 20px;
-      display: none;
-    }
-    .success {
-      background: #d4edda;
-      color: #155724;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      display: none;
-    }
-    .success h2 { margin-top: 0; }
     .loading {
       text-align: center;
       padding: 40px;
@@ -121,79 +62,99 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .secure-badge {
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 8px;
       text-align: center;
-      color: #666;
-      font-size: 12px;
+    }
+    .success h2 { margin-top: 0; }
+    .error { 
+      background: #f8d7da; 
+      color: #721c24; 
+      padding: 15px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #0066cc;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+    }
+    #requestBtn {
+      background: #0066cc; 
+      color: white; 
+      padding: 16px; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 18px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      width: 100%; 
       margin-top: 20px;
     }
-    .secure-badge span { color: #28a745; }
+    #requestBtn:hover { background: #0052a3; }
+    #requestBtn:disabled { background: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <!-- Loading State -->
-  <div id="loadingState" class="loading">
+  <div id="loadingState" class="loading" style="display:none;">
     <div class="spinner"></div>
-    <p>Loading payment details...</p>
+    <p>Generating your invoice...</p>
+    <p style="font-size: 12px; color: #666;">Please wait, this may take a few seconds.</p>
   </div>
 
   <!-- Error State -->
-  <div id="errorState" class="error">
-    <strong>Error:</strong> <span id="errorMessage">Invalid or expired payment link.</span>
+  <div id="errorState" class="error" style="display:none;">
+    <strong>Error:</strong> <span id="errorMessage">Unable to generate invoice.</span>
   </div>
 
   <!-- Success State -->
-  <div id="successState" class="success">
-    <h2>✅ Payment Successful!</h2>
-    <p>Thank you for your payment. A receipt has been sent to your email.</p>
-    <p>Transaction ID: <strong id="transactionId"></strong></p>
+  <div id="successState" class="success" style="display:none;">
+    <h2>✅ Invoice Sent!</h2>
+    <p>Your invoice has been sent to:</p>
+    <p><strong id="successEmail"></strong></p>
+    <p style="margin-top: 15px;">Please check your email for payment instructions.</p>
+    <div class="info-box">
+      <strong>Payment Options Included:</strong><br>
+      • Pay Online (Credit Card)<br>
+      • Pay by Check<br>
+      • Pay by ACH/Wire Transfer
+    </div>
   </div>
 
-  <!-- Payment Form -->
-  <div id="paymentForm" style="display:none;">
-    <h1>💳 Complete Your Payment</h1>
-    <p class="subtitle">ServingIntel Secure Checkout</p>
+  <!-- Initial State -->
+  <div id="initialState">
+    <h1>📄 Request Invoice</h1>
+    <p class="subtitle">ServingIntel Billing</p>
     
     <div class="details">
       <p><strong>Customer:</strong> <span id="customerName"></span></p>
       <p><strong>Email:</strong> <span id="customerEmail"></span></p>
-      <p><strong>Agreement:</strong> <span id="reference"></span></p>
+      <p><strong>Reference:</strong> <span id="reference"></span></p>
       <p class="amount">$<span id="amount"></span></p>
     </div>
 
-    <form id="payment-form">
-      <div class="form-group">
-        <label>Card Number</label>
-        <div id="ccnumber" class="collect-field"></div>
-      </div>
-      
-      <div class="row">
-        <div class="form-group">
-          <label>Expiration</label>
-          <div id="ccexp" class="collect-field"></div>
-        </div>
-        <div class="form-group">
-          <label>CVV</label>
-          <div id="cvv" class="collect-field"></div>
-        </div>
-      </div>
+    <p style="text-align: center; color: #666; font-size: 14px;">
+      Click below to receive an invoice via email.<br>
+      You can then pay by credit card, check, or bank transfer.
+    </p>
 
-      <button type="submit" id="payBtn">
-        Pay $<span id="amountBtn"></span>
-      </button>
-    </form>
-
-    <div class="secure-badge">
-      <span>🔒</span> Secured by NMI Payment Gateway
-    </div>
+    <button id="requestBtn">
+      📧 Send Invoice to My Email
+    </button>
   </div>
 </div>
 
 <script>
-  // Configuration
-  const BACKEND_URL = 'https://0cbdd4b906deeaffb33fb6cd7fc4c6.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/267738c0f32a4462be04b81438d294b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=butn7mXmXwyJV0a_jfUaQ_RFCSl0puYe6boQmBCn-wI';
+  // Configuration - Your Backend Flow URL
+  const BACKEND_URL = 'https://0cbdd4b906deeaffb33fb6cd7fc4c6.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/325b0c314b6a432dba174e832f50a533/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=E6tg2bBnsLls_fSA_48zYZf-rLCqGero04USvF54UpE';
 
   // Get URL parameters
   const params = new URLSearchParams(window.location.search);
@@ -201,69 +162,47 @@
   const name = params.get('name');
   const email = params.get('email');
   const ref = params.get('ref');
+  const company = params.get('company') || '';
+  const address = params.get('address') || '';
+  const phone = params.get('phone') || '';
 
   // DOM elements
   const loadingState = document.getElementById('loadingState');
   const errorState = document.getElementById('errorState');
   const successState = document.getElementById('successState');
-  const paymentForm = document.getElementById('paymentForm');
-  const payBtn = document.getElementById('payBtn');
+  const initialState = document.getElementById('initialState');
+  const requestBtn = document.getElementById('requestBtn');
 
   // Validate parameters
   if (!amount || !name || !email || !ref) {
-    loadingState.style.display = 'none';
     errorState.style.display = 'block';
+    document.getElementById('errorMessage').textContent = 'Invalid or missing payment information.';
+    initialState.style.display = 'none';
   } else {
-    // Show payment form
-    loadingState.style.display = 'none';
-    paymentForm.style.display = 'block';
-    
     // Populate details
     document.getElementById('customerName').textContent = decodeURIComponent(name);
     document.getElementById('customerEmail').textContent = decodeURIComponent(email);
     document.getElementById('amount').textContent = amount;
-    document.getElementById('amountBtn').textContent = amount;
     document.getElementById('reference').textContent = decodeURIComponent(ref);
   }
 
-  // Split name for API
+  // Split name into first and last
   const nameParts = decodeURIComponent(name || '').split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  // Configure Collect.js
-  CollectJS.configure({
-    variant: 'inline',
-    fields: {
-      ccnumber: {
-        selector: '#ccnumber',
-        placeholder: '•••• •••• •••• ••••'
-      },
-      ccexp: {
-        selector: '#ccexp',
-        placeholder: 'MM / YY'
-      },
-      cvv: {
-        selector: '#cvv',
-        placeholder: '•••'
-      }
-    },
-    callback: function(response) {
-      // Got the token, now process payment
-      processPayment(response.token);
-    }
-  });
+  // Button click handler
+  requestBtn.addEventListener('click', requestInvoice);
 
-  // Form submission
-  document.getElementById('payment-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    payBtn.disabled = true;
-    payBtn.textContent = 'Processing...';
-    CollectJS.startPaymentRequest();
-  });
+  // Request Invoice Function
+  async function requestInvoice() {
+    requestBtn.disabled = true;
+    requestBtn.textContent = 'Processing...';
+    
+    initialState.style.display = 'none';
+    errorState.style.display = 'none';
+    loadingState.style.display = 'block';
 
-  // Process payment via backend
-  async function processPayment(token) {
     try {
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
@@ -271,38 +210,34 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          token: token,
           amount: amount,
           firstName: firstName,
           lastName: lastName,
           email: decodeURIComponent(email),
-          orderid: decodeURIComponent(ref)
+          ref: decodeURIComponent(ref),
+          company: decodeURIComponent(company),
+          address: decodeURIComponent(address),
+          phone: decodeURIComponent(phone)
         })
       });
 
-      const result = await response.text();
-      
-      // Parse NMI response
-      const params = new URLSearchParams(result);
-      const responseCode = params.get('response');
-      const responseText = params.get('responsetext');
-      const transactionId = params.get('transactionid');
-
-      if (responseCode === '1') {
+      if (response.ok) {
         // Success
-        paymentForm.style.display = 'none';
+        loadingState.style.display = 'none';
         successState.style.display = 'block';
-        document.getElementById('transactionId').textContent = transactionId;
+        document.getElementById('successEmail').textContent = decodeURIComponent(email);
       } else {
-        // Failed
-        throw new Error(responseText || 'Payment failed');
+        const result = await response.text();
+        throw new Error(result || 'Failed to generate invoice');
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('Invoice error:', error);
+      loadingState.style.display = 'none';
       errorState.style.display = 'block';
-      document.getElementById('errorMessage').textContent = error.message;
-      payBtn.disabled = false;
-      payBtn.innerHTML = 'Pay $' + amount;
+      document.getElementById('errorMessage').textContent = error.message || 'Unable to generate invoice. Please try again.';
+      initialState.style.display = 'block';
+      requestBtn.disabled = false;
+      requestBtn.textContent = '📧 Send Invoice to My Email';
     }
   }
 </script>
@@ -310,3 +245,15 @@
 </body>
 </html>
 ```
+
+4. Scroll down and click **"Commit changes"**
+
+5. Wait 2 minutes for GitHub Pages to deploy
+
+---
+
+## 🧪 Test URL:
+
+After deployment, test with this URL:
+```
+https://servingintelpayments.github.io/pay/invoice.html?amount=162.01&name=Jeffrey%20Datul&email=jdatul@servingintel.com&ref=Labor%20Sale
