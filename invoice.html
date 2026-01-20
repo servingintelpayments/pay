@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Invoice - ServingIntel</title>
+  
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 500px; 
+      margin: 40px auto; 
+      padding: 20px; 
+      background: #f0f2f5; 
+    }
+    .container { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    }
+    h1 { 
+      color: #0066cc; 
+      text-align: center; 
+      margin-bottom: 5px;
+      font-size: 24px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
+    .details { 
+      background: #f8f9fa; 
+      padding: 15px; 
+      border-radius: 8px;
+      border-left: 4px solid #0066cc; 
+      margin-bottom: 25px; 
+    }
+    .details p { margin: 8px 0; font-size: 14px; }
+    .details .amount { 
+      font-size: 28px; 
+      font-weight: bold; 
+      color: #0066cc; 
+      margin: 10px 0;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0066cc;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .success h2 { margin-top: 0; }
+    .error { 
+      background: #f8d7da; 
+      color: #721c24; 
+      padding: 15px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #0066cc;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+    }
+    #requestBtn {
+      background: #0066cc; 
+      color: white; 
+      padding: 16px; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 18px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      width: 100%; 
+      margin-top: 20px;
+    }
+    #requestBtn:hover { background: #0052a3; }
+    #requestBtn:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Loading State -->
+  <div id="loadingState" class="loading" style="display:none;">
+    <div class="spinner"></div>
+    <p>Generating your invoice...</p>
+    <p style="font-size: 12px; color: #666;">Please wait, this may take a few seconds.</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="errorState" class="error" style="display:none;">
+    <strong>Error:</strong> <span id="errorMessage">Unable to generate invoice.</span>
+  </div>
+
+  <!-- Success State -->
+  <div id="successState" class="success" style="display:none;">
+    <h2>✅ Invoice Sent!</h2>
+    <p>Your invoice has been sent to:</p>
+    <p><strong id="successEmail"></strong></p>
+    <p style="margin-top: 15px;">Please check your email for payment instructions.</p>
+    <div class="info-box">
+      <strong>Payment Options Included:</strong><br>
+      • Pay Online (Credit Card)<br>
+      • Pay by Check<br>
+      • Pay by ACH/Wire Transfer
+    </div>
+  </div>
+
+  <!-- Initial State -->
+  <div id="initialState">
+    <h1>📄 Request Invoice</h1>
+    <p class="subtitle">ServingIntel Billing</p>
+    
+    <div class="details">
+      <p><strong>Customer:</strong> <span id="customerName"></span></p>
+      <p><strong>Email:</strong> <span id="customerEmail"></span></p>
+      <p><strong>Reference:</strong> <span id="reference"></span></p>
+      <p class="amount">$<span id="amount"></span></p>
+    </div>
+
+    <p style="text-align: center; color: #666; font-size: 14px;">
+      Click below to receive an invoice via email.<br>
+      You can then pay by credit card, check, or bank transfer.
+    </p>
+
+    <button id="requestBtn">
+      📧 Send Invoice to My Email
+    </button>
+  </div>
+</div>
+
+<script>
+  // Configuration - Your Backend Flow URL
+  const BACKEND_URL = 'https://0cbdd4b906deeaffb33fb6cd7fc4c6.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/325b0c314b6a432dba174e832f50a533/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=E6tg2bBnsLls_fSA_48zYZf-rLCqGero04USvF54UpE';
+
+  // Get URL parameters
+  const params = new URLSearchParams(window.location.search);
+  const amount = params.get('amount');
+  const name = params.get('name');
+  const email = params.get('email');
+  const ref = params.get('ref');
+  const company = params.get('company') || '';
+  const address = params.get('address') || '';
+  const phone = params.get('phone') || '';
+
+  // DOM elements
+  const loadingState = document.getElementById('loadingState');
+  const errorState = document.getElementById('errorState');
+  const successState = document.getElementById('successState');
+  const initialState = document.getElementById('initialState');
+  const requestBtn = document.getElementById('requestBtn');
+
+  // Validate parameters
+  if (!amount || !name || !email || !ref) {
+    errorState.style.display = 'block';
+    document.getElementById('errorMessage').textContent = 'Invalid or missing payment information.';
+    initialState.style.display = 'none';
+  } else {
+    // Populate details
+    document.getElementById('customerName').textContent = decodeURIComponent(name);
+    document.getElementById('customerEmail').textContent = decodeURIComponent(email);
+    document.getElementById('amount').textContent = amount;
+    document.getElementById('reference').textContent = decodeURIComponent(ref);
+  }
+
+  // Split name into first and last
+  const nameParts = decodeURIComponent(name || '').split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  // Button click handler
+  requestBtn.addEventListener('click', requestInvoice);
+
+  // Request Invoice Function
+  async function requestInvoice() {
+    requestBtn.disabled = true;
+    requestBtn.textContent = 'Processing...';
+    
+    initialState.style.display = 'none';
+    errorState.style.display = 'none';
+    loadingState.style.display = 'block';
+
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: amount,
+          firstName: firstName,
+          lastName: lastName,
+          email: decodeURIComponent(email),
+          ref: decodeURIComponent(ref),
+          company: decodeURIComponent(company),
+          address: decodeURIComponent(address),
+          phone: decodeURIComponent(phone)
+        })
+      });
+
+      if (response.ok) {
+        // Success
+        loadingState.style.display = 'none';
+        successState.style.display = 'block';
+        document.getElementById('successEmail').textContent = decodeURIComponent(email);
+      } else {
+        const result = await response.text();
+        throw new Error(result || 'Failed to generate invoice');
+      }
+    } catch (error) {
+      console.error('Invoice error:', error);
+      loadingState.style.display = 'none';
+      errorState.style.display = 'block';
+      document.getElementById('errorMessage').textContent = error.message || 'Unable to generate invoice. Please try again.';
+      initialState.style.display = 'block';
+      requestBtn.disabled = false;
+      requestBtn.textContent = '📧 Send Invoice to My Email';
+    }
+  }
+</script>
+
+</body>
+</html>
+```
+
+4. Scroll down and click **"Commit changes"**
+
+5. Wait 2 minutes for GitHub Pages to deploy
+
+---
+
+## 🧪 Test URL:
+
+After deployment, test with this URL:
+```
+https://servingintelpayments.github.io/pay/invoice.html?amount=162.01&name=Jeffrey%20Datul&email=jdatul@servingintel.com&ref=Labor%20Sale
