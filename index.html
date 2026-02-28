@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Secure Payment - ServingIntel</title>
   
-  <!-- Collect.js for secure card tokenization -->
+  <!-- Collect.js for secure card & ACH tokenization -->
   <script src="https://secure.networkmerchants.com/token/Collect.js" 
           data-tokenization-key="checkout_public_K2xFUr47Y66nYU534ncbV76EbWVUP4Fa"
           data-variant="inline"></script>
@@ -50,6 +50,35 @@
       color: #28a745; 
       margin: 10px 0;
     }
+
+    /* Payment method toggle */
+    .payment-toggle {
+      display: flex;
+      border: 2px solid #0066cc;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 25px;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      background: white;
+      color: #0066cc;
+      transition: all 0.2s;
+    }
+    .toggle-btn.active {
+      background: #0066cc;
+      color: white;
+    }
+    .toggle-btn:first-child {
+      border-right: 2px solid #0066cc;
+    }
+
     .form-group { margin-bottom: 20px; }
     .form-group label { 
       display: block; 
@@ -98,36 +127,42 @@
     .success {
       background: #d4edda;
       color: #155724;
-      padding: 20px;
+      padding: 30px;
       border-radius: 8px;
       text-align: center;
       display: none;
     }
-    .success h2 { margin-top: 0; }
+    .success h2 { color: #155724; margin-bottom: 10px; }
     .loading {
       text-align: center;
       padding: 40px;
     }
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #0066cc;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .secure-badge {
+    .secure-note {
       text-align: center;
       color: #666;
       font-size: 12px;
-      margin-top: 20px;
+      margin-top: 15px;
     }
-    .secure-badge span { color: #28a745; }
+    .payment-section { display: none; }
+    .payment-section.active { display: block; }
+
+    /* ACH specific styles */
+    .ach-input {
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      background: #fff;
+      width: 100%;
+      font-size: 14px;
+      min-height: 45px;
+    }
+    .ach-input:focus {
+      border-color: #0066cc;
+      outline: none;
+    }
+    select.ach-input {
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -135,64 +170,96 @@
 <div class="container">
   <!-- Loading State -->
   <div id="loadingState" class="loading">
-    <div class="spinner"></div>
-    <p>Loading payment details...</p>
+    <h2>Loading payment details...</h2>
   </div>
 
   <!-- Error State -->
   <div id="errorState" class="error">
-    <strong>Error:</strong> <span id="errorMessage">Invalid or expired payment link.</span>
+    <h3>Invalid Payment Link</h3>
+    <p>This payment link is missing required information. Please contact ServingIntel for a new link.</p>
   </div>
 
   <!-- Success State -->
   <div id="successState" class="success">
-    <h2>✅ Payment Successful!</h2>
-    <p>Thank you for your payment. A receipt has been sent to your email.</p>
+    <h2>&#10003; Payment Successful!</h2>
+    <p>Thank you for your payment.</p>
     <p>Transaction ID: <strong id="transactionId"></strong></p>
+    <p style="margin-top: 15px; color: #666; font-size: 14px;">You will receive a confirmation email shortly.</p>
   </div>
 
   <!-- Payment Form -->
-  <div id="paymentForm" style="display:none;">
-    <h1>💳 Complete Your Payment</h1>
-    <p class="subtitle">ServingIntel Secure Checkout</p>
-    
+  <div id="paymentForm" style="display: none;">
+    <h1>&#128179; Secure Payment</h1>
+    <p class="subtitle">ServingIntel</p>
+
+    <!-- Order Details -->
     <div class="details">
       <p><strong>Customer:</strong> <span id="customerName"></span></p>
       <p><strong>Email:</strong> <span id="customerEmail"></span></p>
-      <p><strong>Agreement:</strong> <span id="reference"></span></p>
+      <p><strong>Reference:</strong> <span id="reference"></span></p>
       <p class="amount">$<span id="amount"></span></p>
     </div>
 
+    <!-- Payment Method Toggle -->
+    <div class="payment-toggle">
+      <button class="toggle-btn active" id="toggleCard" onclick="switchPaymentMethod('card')">&#128179; Credit Card</button>
+      <button class="toggle-btn" id="toggleAch" onclick="switchPaymentMethod('ach')">&#127974; Bank Account</button>
+    </div>
+
+    <!-- Error display -->
+    <div id="paymentError" class="error"></div>
+
     <form id="payment-form">
-      <div class="form-group">
-        <label>Card Number</label>
-        <div id="ccnumber" class="collect-field"></div>
-      </div>
-      
-      <div class="row">
+      <!-- Credit Card Fields (Collect.js inline) -->
+      <div id="cardSection" class="payment-section active">
         <div class="form-group">
-          <label>Expiration</label>
-          <div id="ccexp" class="collect-field"></div>
+          <label>Card Number</label>
+          <div id="ccnumber" class="collect-field"></div>
         </div>
-        <div class="form-group">
-          <label>CVV</label>
-          <div id="cvv" class="collect-field"></div>
+        <div class="row">
+          <div class="form-group">
+            <label>Expiration</label>
+            <div id="ccexp" class="collect-field"></div>
+          </div>
+          <div class="form-group">
+            <label>CVV</label>
+            <div id="cvv" class="collect-field"></div>
+          </div>
         </div>
       </div>
 
-      <button type="submit" id="payBtn">
-        Pay $<span id="amountBtn"></span>
-      </button>
+      <!-- ACH / Bank Account Fields (Collect.js inline) -->
+      <div id="achSection" class="payment-section">
+        <div class="form-group">
+          <label>Account Holder Name</label>
+          <div id="checkname" class="collect-field"></div>
+        </div>
+        <div class="form-group">
+          <label>Routing Number (ABA)</label>
+          <div id="checkaba" class="collect-field"></div>
+        </div>
+        <div class="form-group">
+          <label>Account Number</label>
+          <div id="checkaccount" class="collect-field"></div>
+        </div>
+        <div class="form-group">
+          <label>Account Type</label>
+          <select id="accountType" class="ach-input">
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" id="payBtn">Pay $<span id="amountBtn"></span></button>
     </form>
 
-    <div class="secure-badge">
-      <span>🔒</span> Secured by NMI Payment Gateway
-    </div>
+    <p class="secure-note">&#128274; Your payment information is encrypted and secure.</p>
   </div>
 </div>
 
 <script>
-  // Configuration
+  // Backend Power Automate flow URL
   const BACKEND_URL = 'https://0cbdd4b906deeaffb33fb6cd7fc4c6.03.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/267738c0f32a4462be04b81438d294b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=butn7mXmXwyJV0a_jfUaQ_RFCSl0puYe6boQmBCn-wI';
 
   // Get URL parameters
@@ -201,6 +268,9 @@
   const name = params.get('name');
   const email = params.get('email');
   const ref = params.get('ref');
+
+  // Track current payment method
+  let currentMethod = 'card';
 
   // DOM elements
   const loadingState = document.getElementById('loadingState');
@@ -231,7 +301,7 @@
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  // Configure Collect.js
+  // Configure Collect.js with BOTH card and ACH fields
   CollectJS.configure({
     variant: 'inline',
     fields: {
@@ -246,47 +316,86 @@
       cvv: {
         selector: '#cvv',
         placeholder: '•••'
+      },
+      checkname: {
+        selector: '#checkname',
+        placeholder: 'Account holder name'
+      },
+      checkaba: {
+        selector: '#checkaba',
+        placeholder: 'Routing number'
+      },
+      checkaccount: {
+        selector: '#checkaccount',
+        placeholder: 'Account number'
       }
     },
+    fieldsAvailableCallback: function() {
+      console.log('Collect.js fields loaded');
+    },
     callback: function(response) {
-      // Got the token, now process payment
       processPayment(response.token);
     }
   });
+
+  // Switch between Card and ACH
+  function switchPaymentMethod(method) {
+    currentMethod = method;
+    
+    // Toggle button styles
+    document.getElementById('toggleCard').classList.toggle('active', method === 'card');
+    document.getElementById('toggleAch').classList.toggle('active', method === 'ach');
+    
+    // Toggle sections
+    document.getElementById('cardSection').classList.toggle('active', method === 'card');
+    document.getElementById('achSection').classList.toggle('active', method === 'ach');
+
+    // Clear any errors
+    document.getElementById('paymentError').style.display = 'none';
+  }
 
   // Form submission
   document.getElementById('payment-form').addEventListener('submit', function(e) {
     e.preventDefault();
     payBtn.disabled = true;
     payBtn.textContent = 'Processing...';
+    document.getElementById('paymentError').style.display = 'none';
     CollectJS.startPaymentRequest();
   });
 
   // Process payment via backend
   async function processPayment(token) {
     try {
+      const payload = {
+        token: token,
+        amount: amount,
+        firstName: firstName,
+        lastName: lastName,
+        email: decodeURIComponent(email),
+        orderid: decodeURIComponent(ref),
+        paymentMethod: currentMethod
+      };
+
+      // Add account type for ACH
+      if (currentMethod === 'ach') {
+        payload.accountType = document.getElementById('accountType').value;
+      }
+
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          token: token,
-          amount: amount,
-          firstName: firstName,
-          lastName: lastName,
-          email: decodeURIComponent(email),
-          orderid: decodeURIComponent(ref)
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.text();
       
       // Parse NMI response
-      const params = new URLSearchParams(result);
-      const responseCode = params.get('response');
-      const responseText = params.get('responsetext');
-      const transactionId = params.get('transactionid');
+      const responseParams = new URLSearchParams(result);
+      const responseCode = responseParams.get('response');
+      const responseText = responseParams.get('responsetext');
+      const transactionId = responseParams.get('transactionid');
 
       if (responseCode === '1') {
         // Success
@@ -299,8 +408,9 @@
       }
     } catch (error) {
       console.error('Payment error:', error);
-      errorState.style.display = 'block';
-      document.getElementById('errorMessage').textContent = error.message;
+      const errorDiv = document.getElementById('paymentError');
+      errorDiv.textContent = error.message;
+      errorDiv.style.display = 'block';
       payBtn.disabled = false;
       payBtn.innerHTML = 'Pay $' + amount;
     }
