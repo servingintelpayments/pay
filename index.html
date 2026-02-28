@@ -143,8 +143,19 @@
       font-size: 12px;
       margin-top: 15px;
     }
-    .payment-section { display: none; }
-    .payment-section.active { display: block; }
+    .payment-section { 
+      visibility: hidden; 
+      height: 0; 
+      overflow: hidden; 
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .payment-section.active { 
+      visibility: visible; 
+      height: auto; 
+      overflow: visible; 
+      opacity: 1;
+    }
 
     /* ACH specific styles */
     .ach-input {
