@@ -260,7 +260,7 @@
   <div id="checkSuccessState" class="success">
     <h2>&#10003; Check Payment Confirmed</h2>
     <p>Thank you! We've recorded your intent to pay by check.</p>
-    <p style="margin-top: 10px;"><strong>Please mail your check within 3 business days to:</strong></p>
+    <p style="margin-top: 10px;"><strong>Please mail your check within 7 days to:</strong></p>
     <div class="check-address" style="display: inline-block; text-align: left; margin: 10px auto;">
       <strong>ServingIntel</strong><br>
       454 Hancock Ave<br>
@@ -349,12 +349,12 @@
           <p><strong>Reference:</strong> <span id="checkRef"></span></p>
           <p style="font-size: 13px; color: #666;">Please write your reference number on the memo line of your check.</p>
           <div class="check-warning">
-            &#9888; Please mail your check within <strong>3 business days</strong>.
+            &#9888; Please mail your check within <strong>7 days</strong>.
           </div>
         </div>
         <div class="check-confirm">
           <input type="checkbox" id="checkConfirm">
-          <label for="checkConfirm">I confirm that I will mail a check for <strong>$<span id="checkConfirmAmount"></span></strong> payable to ServingIntel within 3 business days.</label>
+          <label for="checkConfirm">I confirm that I will mail a check for <strong>$<span id="checkConfirmAmount"></span></strong> payable to ServingIntel within 7 days.</label>
         </div>
       </div>
 
@@ -488,7 +488,7 @@
     if (currentMethod === 'check_mail') {
       if (!document.getElementById('checkConfirm').checked) {
         const errorDiv = document.getElementById('paymentError');
-        errorDiv.textContent = 'Please confirm that you will mail the check within 3 business days.';
+        errorDiv.textContent = 'Please confirm that you will mail the check within 7 days.';
         errorDiv.style.display = 'block';
         return;
       }
